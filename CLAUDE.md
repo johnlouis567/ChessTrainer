@@ -18,10 +18,13 @@ There are no tests.
 ### Layers
 
 ```
-src/types/chess.ts          ← shared enums (no logic)
-src/engine/pieces.ts        ← OO piece classes
-src/engine/Game.ts          ← game state + rule enforcement
-src/audio/sounds.ts         ← Web Audio API sound effects
+src/types/chess.ts                     ← shared enums (no logic)
+src/engine/pieces.ts                   ← OO piece classes
+src/engine/Game.ts                     ← game state + rule enforcement
+src/engine/ChessBoardFactory.ts        ← random position generator
+src/engine/tactics.ts                  ← tactical analysis (forks, unprotected)
+src/audio/sounds.ts                    ← Web Audio API sound effects
+src/App.tsx + .css                     ← top-level view routing
 src/components/ChessBoard.tsx + .css   ← React UI
 ```
 
