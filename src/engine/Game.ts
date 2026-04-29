@@ -11,12 +11,14 @@ export class Game {
   currentTurn: PieceColor;
   enPassantTarget: Position | null;
   status: GameStatus;
+  pendingPromotion: Position | null;
 
   constructor() {
     this.board = this.buildInitialBoard();
     this.currentTurn = PieceColor.White;
     this.enPassantTarget = null;
     this.status = 'active';
+    this.pendingPromotion = null;
   }
 
   private buildInitialBoard(): BoardGrid {
@@ -188,15 +190,37 @@ export class Game {
     this.board[to.row][to.col] = piece;
     this.board[from.row][from.col] = null;
 
-    // Pawn promotion — auto-promote to queen
+    // Pawn promotion — pause and wait for player choice
     if (piece instanceof Pawn && (to.row === 0 || to.row === 7)) {
-      this.board[to.row][to.col] = new Queen(piece.color, true);
+      this.pendingPromotion = to;
+      return true;
     }
 
     this.currentTurn = this.currentTurn === PieceColor.White ? PieceColor.Black : PieceColor.White;
     this.updateStatus();
 
     return true;
+  }
+
+  promote(type: PieceType): void {
+    const pos = this.pendingPromotion;
+    if (!pos) return;
+
+    const color = this.board[pos.row][pos.col]!.color;
+    const promoted: ChessPiece = (() => {
+      switch (type) {
+        case PieceType.Queen:  return new Queen(color, true);
+        case PieceType.Rook:   return new Rook(color, true);
+        case PieceType.Bishop: return new Bishop(color, true);
+        case PieceType.Knight: return new Knight(color, true);
+        default:               return new Queen(color, true);
+      }
+    })();
+
+    this.board[pos.row][pos.col] = promoted;
+    this.pendingPromotion = null;
+    this.currentTurn = this.currentTurn === PieceColor.White ? PieceColor.Black : PieceColor.White;
+    this.updateStatus();
   }
 
   private updateStatus(): void {

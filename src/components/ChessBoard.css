@@ -130,6 +130,69 @@
   pointer-events: none;
 }
 
+/* Promotion picker */
+
+.board-container {
+  position: relative;
+}
+
+.promotion-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border: 2px solid #5a3e28;
+}
+
+.promotion-picker {
+  background: #f0d9b5;
+  border: 2px solid #5a3e28;
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.promotion-picker__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a3e28;
+  margin: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.promotion-picker__choices {
+  display: flex;
+  gap: 8px;
+}
+
+.promotion-picker__btn {
+  width: 72px;
+  height: 72px;
+  font-size: 56px;
+  line-height: 1;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.promotion-picker__btn:hover {
+  background-color: #cde6a0;
+  border-color: #7fc97f;
+}
+
 .btn-reset {
   margin-top: 4px;
   padding: 8px 24px;
