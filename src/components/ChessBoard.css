@@ -97,10 +97,22 @@
   line-height: normal;
 }
 
+@keyframes piece-slide {
+  from { transform: translate(var(--slide-dx), var(--slide-dy)); }
+  to   { transform: translate(0, 0); }
+}
+
 .piece {
   font-size: 80px;
   line-height: 1;
   cursor: pointer;
+}
+
+.piece--moving {
+  animation: piece-slide 180ms ease-out both;
+  /* Render above non-moving pieces while sliding */
+  position: relative;
+  z-index: 1;
 }
 
 .piece--white {

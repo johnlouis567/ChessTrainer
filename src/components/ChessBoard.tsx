@@ -3,7 +3,10 @@ import { PieceType } from '../types/chess';
 import type { PieceColor } from '../types/chess';
 import { Game, GameStatus } from '../engine/Game';
 import type { Position } from '../engine/pieces';
+import { playSelect, playMove, playCapture } from '../audio/sounds';
 import './ChessBoard.css';
+
+const SQUARE_SIZE = 72; // must match .board__square dimensions in CSS
 
 const PIECE_SYMBOLS: Record<PieceType, string> = {
   [PieceType.King]:   '♚',
@@ -23,6 +26,9 @@ const PROMOTION_CHOICES: PieceType[] = [
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+interface AnimMove { from: Position; to: Position }
+interface AnimInfo { moves: AnimMove[]; key: number }
 
 function PromotionPicker({
   color,
@@ -60,6 +66,7 @@ export function ChessBoard() {
   const [, forceUpdate] = useState(0);
   const [selected, setSelected] = useState<Position | null>(null);
   const [legalMoves, setLegalMoves] = useState<Position[]>([]);
+  const [animInfo, setAnimInfo] = useState<AnimInfo | null>(null);
 
   const rerender = useCallback(() => forceUpdate(n => n + 1), []);
 
@@ -73,7 +80,30 @@ export function ChessBoard() {
       const isLegal = legalMoves.some(m => m.row === pos.row && m.col === pos.col);
 
       if (isLegal) {
+        const movingPiece = game.board[selected.row][selected.col];
+        const targetPiece = game.board[pos.row][pos.col];
+
+        // En passant: pawn moves diagonally to an empty square
+        const isEnPassant =
+          movingPiece?.type === PieceType.Pawn &&
+          pos.col !== selected.col &&
+          targetPiece === null;
+        const isCaptureMoveType = targetPiece !== null || isEnPassant;
+
+        // Build animation moves (king + rook for castling)
+        const animMoves: AnimMove[] = [{ from: selected, to: pos }];
+        if (movingPiece?.type === PieceType.King && Math.abs(pos.col - selected.col) === 2) {
+          const row = pos.row;
+          animMoves.push(
+            pos.col === 6
+              ? { from: { row, col: 7 }, to: { row, col: 5 } }
+              : { from: { row, col: 0 }, to: { row, col: 3 } },
+          );
+        }
+
         game.makeMove(selected, pos);
+        isCaptureMoveType ? playCapture() : playMove();
+        setAnimInfo({ moves: animMoves, key: Date.now() });
         setSelected(null);
         setLegalMoves([]);
         rerender();
@@ -82,6 +112,7 @@ export function ChessBoard() {
 
       // Re-select a different friendly piece
       if (piece && piece.color === game.currentTurn) {
+        playSelect();
         const moves = game.getLegalMoves(pos);
         setSelected(pos);
         setLegalMoves(moves);
@@ -94,6 +125,7 @@ export function ChessBoard() {
     }
 
     if (piece && piece.color === game.currentTurn) {
+      playSelect();
       const moves = game.getLegalMoves(pos);
       setSelected(pos);
       setLegalMoves(moves);
@@ -109,6 +141,7 @@ export function ChessBoard() {
     gameRef.current = new Game();
     setSelected(null);
     setLegalMoves([]);
+    setAnimInfo(null);
     rerender();
   };
 
@@ -118,7 +151,7 @@ export function ChessBoard() {
       case GameStatus.Checkmate: return `Checkmate — ${game.winner === 'white' ? 'White' : 'Black'} wins!`;
       case GameStatus.Stalemate: return 'Stalemate — draw!';
       case GameStatus.Check:     return `${game.currentTurn === 'white' ? 'White' : 'Black'} is in check!`;
-      default:          return `${game.currentTurn === 'white' ? 'White' : 'Black'} to move`;
+      default:                   return `${game.currentTurn === 'white' ? 'White' : 'Black'} to move`;
     }
   };
 
@@ -137,12 +170,19 @@ export function ChessBoard() {
             <div key={rank} className="board__row" role="row">
               <span className="board__label board__label--rank">{rank}</span>
               {FILES.map((file, colIndex) => {
-                const isLight = (rowIndex + colIndex) % 2 === 0;
-                const piece = game.board[rowIndex][colIndex];
-                const pos = { row: rowIndex, col: colIndex };
-                const isSel = selected?.row === rowIndex && selected?.col === colIndex;
-                const isLegal = legalMoves.some(m => m.row === rowIndex && m.col === colIndex);
-                const isCapture = isLegal && piece !== null;
+                const isLight  = (rowIndex + colIndex) % 2 === 0;
+                const piece    = game.board[rowIndex][colIndex];
+                const pos      = { row: rowIndex, col: colIndex };
+                const isSel    = selected?.row === rowIndex && selected?.col === colIndex;
+                const isLegal  = legalMoves.some(m => m.row === rowIndex && m.col === colIndex);
+                const isCap    = isLegal && piece !== null;
+
+                // Animation: find if this square has a piece that just arrived
+                const animMove = animInfo?.moves.find(
+                  m => m.to.row === rowIndex && m.to.col === colIndex,
+                );
+                const dx = animMove ? (animMove.from.col - colIndex) * SQUARE_SIZE : 0;
+                const dy = animMove ? (animMove.from.row - rowIndex) * SQUARE_SIZE : 0;
 
                 return (
                   <div
@@ -150,9 +190,9 @@ export function ChessBoard() {
                     className={[
                       'board__square',
                       `board__square--${isLight ? 'light' : 'dark'}`,
-                      isSel     ? 'board__square--selected' : '',
-                      isLegal   ? 'board__square--legal'    : '',
-                      isCapture ? 'board__square--capture'  : '',
+                      isSel  ? 'board__square--selected' : '',
+                      isLegal ? 'board__square--legal'   : '',
+                      isCap  ? 'board__square--capture'  : '',
                     ].filter(Boolean).join(' ')}
                     role="gridcell"
                     aria-label={`${file}${rank}`}
@@ -160,7 +200,13 @@ export function ChessBoard() {
                   >
                     {piece && (
                       <span
-                        className={`piece piece--${piece.color}`}
+                        // Changing key forces React to remount the element, resetting the animation
+                        key={animMove ? `moving-${animInfo!.key}-${colIndex}-${rowIndex}` : 'still'}
+                        className={`piece piece--${piece.color}${animMove ? ' piece--moving' : ''}`}
+                        style={animMove ? ({
+                          '--slide-dx': `${dx}px`,
+                          '--slide-dy': `${dy}px`,
+                        } as React.CSSProperties) : undefined}
                         aria-label={`${piece.color} ${piece.type}`}
                       >
                         {PIECE_SYMBOLS[piece.type]}
