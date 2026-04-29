@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { PieceType } from '../types/chess';
 import type { PieceColor } from '../types/chess';
-import { Game } from '../engine/Game';
+import { Game, GameStatus } from '../engine/Game';
 import type { Position } from '../engine/pieces';
 import './ChessBoard.css';
 
@@ -64,7 +64,7 @@ export function ChessBoard() {
   const rerender = useCallback(() => forceUpdate(n => n + 1), []);
 
   const handleSquareClick = (pos: Position) => {
-    if (game.status === 'checkmate' || game.status === 'stalemate') return;
+    if (game.status === GameStatus.Checkmate || game.status === GameStatus.Stalemate) return;
     if (game.pendingPromotion) return;
 
     const piece = game.board[pos.row][pos.col];
@@ -115,9 +115,9 @@ export function ChessBoard() {
   const statusText = () => {
     if (game.pendingPromotion) return 'Choose a piece to promote to';
     switch (game.status) {
-      case 'checkmate': return `Checkmate — ${game.winner === 'white' ? 'White' : 'Black'} wins!`;
-      case 'stalemate': return 'Stalemate — draw!';
-      case 'check':     return `${game.currentTurn === 'white' ? 'White' : 'Black'} is in check!`;
+      case GameStatus.Checkmate: return `Checkmate — ${game.winner === 'white' ? 'White' : 'Black'} wins!`;
+      case GameStatus.Stalemate: return 'Stalemate — draw!';
+      case GameStatus.Check:     return `${game.currentTurn === 'white' ? 'White' : 'Black'} is in check!`;
       default:          return `${game.currentTurn === 'white' ? 'White' : 'Black'} to move`;
     }
   };
@@ -128,7 +128,7 @@ export function ChessBoard() {
 
   return (
     <div className="board-wrapper">
-      <div className={`board-status board-status--${game.pendingPromotion ? 'active' : game.status}`}>
+      <div className={`board-status board-status--${game.pendingPromotion ? GameStatus.Active : game.status}`}>
         {statusText()}
       </div>
       <div className="board-container">

@@ -4,7 +4,13 @@ import {
 } from './pieces';
 import type { Position, BoardGrid, MoveContext } from './pieces';
 
-export type GameStatus = 'active' | 'check' | 'checkmate' | 'stalemate';
+export const GameStatus = {
+  Active:    'active',
+  Check:     'check',
+  Checkmate: 'checkmate',
+  Stalemate: 'stalemate',
+} as const;
+export type GameStatus = typeof GameStatus[keyof typeof GameStatus];
 
 export class Game {
   board: BoardGrid;
@@ -17,7 +23,7 @@ export class Game {
     this.board = this.buildInitialBoard();
     this.currentTurn = PieceColor.White;
     this.enPassantTarget = null;
-    this.status = 'active';
+    this.status = GameStatus.Active;
     this.pendingPromotion = null;
   }
 
@@ -228,9 +234,9 @@ export class Game {
     const hasMove = this.anyLegalMove(this.currentTurn);
 
     if (!hasMove) {
-      this.status = inCheck ? 'checkmate' : 'stalemate';
+      this.status = inCheck ? GameStatus.Checkmate : GameStatus.Stalemate;
     } else {
-      this.status = inCheck ? 'check' : 'active';
+      this.status = inCheck ? GameStatus.Check : GameStatus.Active;
     }
   }
 
@@ -260,7 +266,7 @@ export class Game {
   }
 
   get winner(): PieceColor | null {
-    if (this.status !== 'checkmate') return null;
+    if (this.status !== GameStatus.Checkmate) return null;
     return this.currentTurn === PieceColor.White ? PieceColor.Black : PieceColor.White;
   }
 
