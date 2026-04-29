@@ -241,3 +241,38 @@
 .btn-back:hover {
   background-color: rgba(240, 217, 181, 0.1);
 }
+
+/* Practice mode: move-count slider */
+
+.practice-config {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 260px;
+}
+
+.practice-config__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b58863;
+  letter-spacing: 0.03em;
+}
+
+
+.practice-config__input {
+  width: 72px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0d9b5;
+  background-color: #3a3a3a;
+  border: 2px solid #5a3e28;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.practice-config__input:focus {
+  outline: none;
+  border-color: #7a5538;
+}

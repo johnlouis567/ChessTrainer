@@ -71,7 +71,9 @@ function PromotionPicker({
 }
 
 export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
-  const createGame = () => mode === BoardMode.Practice ? ChessBoardFactory.generate() : new Game();
+  const [numMoves, setNumMoves] = useState(40);
+
+  const createGame = () => mode === BoardMode.Practice ? ChessBoardFactory.generate(numMoves) : new Game();
 
   const gameRef = useRef<Game | null>(null);
   if (!gameRef.current) gameRef.current = createGame();
@@ -251,6 +253,19 @@ export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
           {mode === BoardMode.Practice ? 'New Position' : 'New Game'}
         </button>
       </div>
+      {mode === BoardMode.Practice && (
+        <div className="practice-config">
+          <label className="practice-config__label">Moves simulated</label>
+          <input
+            type="number"
+            min={1}
+            max={160}
+            value={numMoves}
+            onChange={e => setNumMoves(Math.min(160, Math.max(1, Number(e.target.value))))}
+            className="practice-config__input"
+          />
+        </div>
+      )}
     </div>
   );
 }
