@@ -205,20 +205,39 @@
   border-color: #7fc97f;
 }
 
-.btn-reset {
+.board-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 4px;
+}
+
+.btn-reset,
+.btn-back {
   padding: 8px 24px;
   font-size: 14px;
   font-weight: 600;
-  color: #f0d9b5;
-  background-color: #5a3e28;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   letter-spacing: 0.03em;
   transition: background-color 0.15s;
 }
 
+.btn-reset {
+  color: #f0d9b5;
+  background-color: #5a3e28;
+  border: none;
+}
+
 .btn-reset:hover {
   background-color: #7a5538;
+}
+
+.btn-back {
+  color: #f0d9b5;
+  background-color: transparent;
+  border: 2px solid #5a3e28;
+}
+
+.btn-back:hover {
+  background-color: rgba(240, 217, 181, 0.1);
 }

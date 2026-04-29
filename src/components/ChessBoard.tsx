@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from 'react';
 import { PieceType } from '../types/chess';
 import type { PieceColor } from '../types/chess';
 import { Game, GameStatus } from '../engine/Game';
+import { ChessBoardFactory } from '../engine/ChessBoardFactory';
 import type { Position } from '../engine/pieces';
 import { playSelect, playMove, playCapture } from '../audio/sounds';
 import './ChessBoard.css';
@@ -26,6 +27,17 @@ const PROMOTION_CHOICES: PieceType[] = [
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+export const BoardMode = {
+  Play:     'play',
+  Practice: 'practice',
+} as const;
+export type BoardMode = typeof BoardMode[keyof typeof BoardMode];
+
+interface ChessBoardProps {
+  mode?: BoardMode;
+  onBack?: () => void;
+}
 
 interface AnimMove { from: Position; to: Position }
 interface AnimInfo { moves: AnimMove[]; key: number }
@@ -58,9 +70,11 @@ function PromotionPicker({
   );
 }
 
-export function ChessBoard() {
+export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
+  const createGame = () => mode === BoardMode.Practice ? ChessBoardFactory.generate() : new Game();
+
   const gameRef = useRef<Game | null>(null);
-  if (!gameRef.current) gameRef.current = new Game();
+  if (!gameRef.current) gameRef.current = createGame();
   const game = gameRef.current;
 
   const [, forceUpdate] = useState(0);
@@ -138,7 +152,7 @@ export function ChessBoard() {
   };
 
   const handleReset = () => {
-    gameRef.current = new Game();
+    gameRef.current = createGame();
     setSelected(null);
     setLegalMoves([]);
     setAnimInfo(null);
@@ -231,7 +245,12 @@ export function ChessBoard() {
         )}
       </div>
 
-      <button className="btn-reset" onClick={handleReset}>New Game</button>
+      <div className="board-actions">
+        {onBack && <button className="btn-back" onClick={onBack}>← Back</button>}
+        <button className="btn-reset" onClick={handleReset}>
+          {mode === BoardMode.Practice ? 'New Position' : 'New Game'}
+        </button>
+      </div>
     </div>
   );
 }
