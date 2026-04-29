@@ -3,6 +3,7 @@ import { PieceType } from '../types/chess';
 import type { PieceColor } from '../types/chess';
 import { Game, GameStatus } from '../engine/Game';
 import { ChessBoardFactory } from '../engine/ChessBoardFactory';
+import { calculateForks, calculateUnprotected } from '../engine/tactics';
 import type { Position } from '../engine/pieces';
 import { playSelect, playMove, playCapture } from '../audio/sounds';
 import './ChessBoard.css';
@@ -25,6 +26,15 @@ const PROMOTION_CHOICES: PieceType[] = [
   PieceType.Knight,
 ];
 
+const ALL_PIECE_TYPES: PieceType[] = [
+  PieceType.Queen,
+  PieceType.Rook,
+  PieceType.Bishop,
+  PieceType.Knight,
+  PieceType.Pawn,
+  PieceType.King,
+];
+
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
@@ -33,6 +43,8 @@ export const BoardMode = {
   Practice: 'practice',
 } as const;
 export type BoardMode = typeof BoardMode[keyof typeof BoardMode];
+
+type ForkMode = PieceType | 'unprotected';
 
 interface ChessBoardProps {
   mode?: BoardMode;
@@ -72,12 +84,22 @@ function PromotionPicker({
 
 export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
   const [numMoves, setNumMoves] = useState(40);
+  const [forkMode, setForkMode] = useState<ForkMode | null>(null);
 
   const createGame = () => mode === BoardMode.Practice ? ChessBoardFactory.generate(numMoves) : new Game();
 
   const gameRef = useRef<Game | null>(null);
   if (!gameRef.current) gameRef.current = createGame();
   const game = gameRef.current;
+
+  const forkData = (forkMode !== null && forkMode !== 'unprotected')
+    ? calculateForks(game.board, game.currentTurn, forkMode)
+    : [];
+  const forkSquares    = forkData.map(f => f.square);
+  const forkTargets    = forkData.flatMap(f => f.targets);
+  const unprotected    = forkMode === 'unprotected'
+    ? calculateUnprotected(game.board, game.currentTurn)
+    : [];
 
   const [, forceUpdate] = useState(0);
   const [selected, setSelected] = useState<Position | null>(null);
@@ -158,6 +180,7 @@ export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
     setSelected(null);
     setLegalMoves([]);
     setAnimInfo(null);
+    setForkMode(null);
     rerender();
   };
 
@@ -192,6 +215,9 @@ export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
                 const isSel    = selected?.row === rowIndex && selected?.col === colIndex;
                 const isLegal  = legalMoves.some(m => m.row === rowIndex && m.col === colIndex);
                 const isCap    = isLegal && piece !== null;
+                const isFork        = forkSquares.some(m => m.row === rowIndex && m.col === colIndex);
+                const isForkTarget  = forkTargets.some(m => m.row === rowIndex && m.col === colIndex);
+                const isUnprotected = unprotected.some(m => m.row === rowIndex && m.col === colIndex);
 
                 // Animation: find if this square has a piece that just arrived
                 const animMove = animInfo?.moves.find(
@@ -206,9 +232,12 @@ export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
                     className={[
                       'board__square',
                       `board__square--${isLight ? 'light' : 'dark'}`,
-                      isSel  ? 'board__square--selected' : '',
-                      isLegal ? 'board__square--legal'   : '',
-                      isCap  ? 'board__square--capture'  : '',
+                      isFork        ? 'board__square--fork'        : '',
+                      isForkTarget  ? 'board__square--fork-target' : '',
+                      isUnprotected ? 'board__square--unprotected' : '',
+                      isSel         ? 'board__square--selected'    : '',
+                      isLegal       ? 'board__square--legal'       : '',
+                      isCap         ? 'board__square--capture'     : '',
                     ].filter(Boolean).join(' ')}
                     role="gridcell"
                     aria-label={`${file}${rank}`}
@@ -254,17 +283,49 @@ export function ChessBoard({ mode = BoardMode.Play, onBack }: ChessBoardProps) {
         </button>
       </div>
       {mode === BoardMode.Practice && (
-        <div className="practice-config">
-          <label className="practice-config__label">Moves simulated</label>
-          <input
-            type="number"
-            min={1}
-            max={160}
-            value={numMoves}
-            onChange={e => setNumMoves(Math.min(160, Math.max(1, Number(e.target.value))))}
-            className="practice-config__input"
-          />
-        </div>
+        <>
+          <div className="practice-config">
+            <label className="practice-config__label">Moves simulated</label>
+            <input
+              type="number"
+              min={1}
+              max={160}
+              value={numMoves}
+              onChange={e => setNumMoves(Math.min(160, Math.max(1, Number(e.target.value))))}
+              className="practice-config__input"
+            />
+          </div>
+          <div className="fork-picker">
+            <p className="fork-picker__label">Fork finder</p>
+            <div className="fork-picker__pieces">
+              {ALL_PIECE_TYPES.map(type => (
+                <button
+                  key={type}
+                  className={[
+                    'fork-picker__btn',
+                    `piece--${game.currentTurn}`,
+                    forkMode === type ? 'fork-picker__btn--active' : '',
+                  ].filter(Boolean).join(' ')}
+                  aria-label={`Show ${type} forks`}
+                  title={type}
+                  onClick={() => setForkMode(prev => prev === type ? null : type)}
+                >
+                  {PIECE_SYMBOLS[type]}
+                </button>
+              ))}
+            </div>
+            <button
+              className={[
+                'fork-picker__btn',
+                'fork-picker__btn--text',
+                forkMode === 'unprotected' ? 'fork-picker__btn--active' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setForkMode(prev => prev === 'unprotected' ? null : 'unprotected')}
+            >
+              Unprotected
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

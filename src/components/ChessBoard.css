@@ -73,6 +73,30 @@
   background-color: #93b56a;
 }
 
+/* Fork square (placement): gold */
+.board__square--fork {
+  background-color: #e8c840;
+}
+.board__square--fork.board__square--dark {
+  background-color: #c8a020;
+}
+
+/* Fork target (enemy pieces that would be forked): orange */
+.board__square--fork-target {
+  background-color: #e87030;
+}
+.board__square--fork-target.board__square--dark {
+  background-color: #c85010;
+}
+
+/* Unprotected enemy piece: red */
+.board__square--unprotected {
+  background-color: #dc4040;
+}
+.board__square--unprotected.board__square--dark {
+  background-color: #b82020;
+}
+
 /* Capture highlight: coloured ring around the corner */
 .board__square--capture::after {
   content: '';
@@ -275,4 +299,62 @@
 .practice-config__input:focus {
   outline: none;
   border-color: #7a5538;
+}
+
+/* Fork finder piece picker */
+
+.fork-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fork-picker__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b58863;
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.fork-picker__pieces {
+  display: flex;
+  gap: 4px;
+}
+
+.fork-picker__btn {
+  width: 48px;
+  height: 48px;
+  font-size: 36px;
+  line-height: 1;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.fork-picker__btn:hover {
+  background-color: rgba(240, 217, 181, 0.1);
+  border-color: #5a3e28;
+}
+
+.fork-picker__btn--active {
+  background-color: #e8c840;
+  border-color: #c8a020;
+}
+
+.fork-picker__btn--text {
+  width: auto;
+  height: auto;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  color: #f0d9b5;
+  letter-spacing: 0.03em;
 }
